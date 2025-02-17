@@ -60,7 +60,8 @@ task void mandelbrot_ispc_task(uniform float x0, uniform float y0,
             output[index] = mandel(x, y, maxIterations);
     }
 }
-
+// My part to do
+// Iss waly Part ko change karna thaaa
 export void mandelbrot_ispc_withtasks(uniform float x0, uniform float y0,
                                       uniform float x1, uniform float y1,
                                       uniform int width, uniform int height,
@@ -70,10 +71,7 @@ export void mandelbrot_ispc_withtasks(uniform float x0, uniform float y0,
 
     uniform int rowsPerTask = height / 2;
 
-    // create 2 tasks
-    launch[2] mandelbrot_ispc_task(x0, y0, x1, y1,
-                                     width, height,
-                                     rowsPerTask,
-                                     maxIterations,
+    //// Task Increase karny se speedup ayy ga
+    launch[64] mandelbrot_ispc_task(x0, y0, x1, y1, width, height, rowsPerTask, maxIterations,
                                      output); 
 }

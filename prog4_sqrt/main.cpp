@@ -26,7 +26,7 @@ int main() {
     float* values = new float[N];
     float* output = new float[N];
     float* gold = new float[N];
-
+    // My Task 
     for (unsigned int i=0; i<N; i++)
     {
         // TODO: CS149 students.  Attempt to change the values in the
@@ -35,6 +35,14 @@ int main() {
         
         // starter code populates array with random input values
         values[i] = .001f + 2.998f * static_cast<float>(rand()) / RAND_MAX;
+
+
+
+        //// Yahan Values ko ki Array ko onitialize karna hai 
+        
+        //values[i] = 0.0000001f;     //// For Fastest Convergence Maximum Speedup 
+        //values[i] = 2.99f;   //// For Slowest Convergence Minimum Speedup
+
     }
 
     // generate a gold version to check results
