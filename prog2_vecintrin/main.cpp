@@ -276,13 +276,13 @@ void clampedExpSerial(float *values, int *exponents, float *output, int N)
     }
   }
 }
-////  Is Function me bhi hamain Vectorization implement karna thee
+
 void clampedExpVector(float* values, int* exponents, float* output, int N) {
   __cs149_vec_float x, result, limit;
   __cs149_vec_int y, count;
-  __cs149_mask maskAll, maskExpZero, maskExpNonZero, maskClamp;
+  __cs149_mask maskAll, maskExpZero, maskExpOne, maskExpNonZero, maskClamp, maskExpOneNot;
 
-  limit = _cs149_vset_float(9.999999f);
+  limit = _cs149_vset_float(9.999999f);  // Clamping threshold
   __cs149_vec_int zeroVec = _cs149_vset_int(0);
   __cs149_vec_int oneVec = _cs149_vset_int(1);
 
@@ -293,31 +293,39 @@ void clampedExpVector(float* values, int* exponents, float* output, int N) {
       _cs149_vload_float(x, values + i, maskAll);
       _cs149_vload_int(y, exponents + i, maskAll);
 
-      // Identify elements where exponent == 0
+      // Step 1: Handle exp == 0
       _cs149_veq_int(maskExpZero, y, zeroVec, maskAll);
-      _cs149_vset_float(result, 1.0f, maskExpZero);  // If exp == 0, result = 1
+      _cs149_vset_float(result, 1.0f, maskExpZero);  // If exp == 0, result = 1.0
 
-      // Identify elements where exponent > 0
-      maskExpNonZero = _cs149_mask_not(maskExpZero);
-      _cs149_vmove_float(result, x, maskExpNonZero);  // result = x for nonzero exponent
+      // Step 2: Handle exp == 1
+      _cs149_veq_int(maskExpOne, y, oneVec, maskAll);
+      _cs149_vmove_float(result, x, maskExpOne);  // If exp == 1, result = x
 
-      count = y;  // Copy exponent to count
-      _cs149_vsub_int(count, count, oneVec, maskExpNonZero);  // count = y - 1
+      // Step 3: Identify exp > 1
+      maskExpNonZero = _cs149_mask_not(maskExpZero);  // Remove exp == 0 cases
+      maskExpOneNot = _cs149_mask_not(maskExpOne);  // Store the not-mask for exp == 1
+      maskExpNonZero = _cs149_mask_and(maskExpNonZero, maskExpOneNot);  // Remove exp == 1 cases
+      _cs149_vmove_float(result, x, maskExpNonZero);  // result = x for exponentiation
 
+      // Step 4: Exponentiation loop
+      _cs149_vsub_int(count, y, oneVec, maskExpNonZero);  // count = exp - 1
       while (_cs149_cntbits(maskExpNonZero) > 0) {
           _cs149_vmult_float(result, result, x, maskExpNonZero);  // result *= x
-          _cs149_vsub_int(count, count, oneVec, maskExpNonZero);  // count = count - 1
-          _cs149_vgt_int(maskExpNonZero, count, zeroVec, maskAll);  // Update mask
+          _cs149_vsub_int(count, count, oneVec, maskExpNonZero);  // count -= 1
+          _cs149_vgt_int(maskExpNonZero, count, zeroVec, maskExpNonZero);  // Update mask
       }
 
-      // Apply clamping for values > 9.999999
+      // Step 5: Apply clamping
       _cs149_vgt_float(maskClamp, result, limit, maskAll);
       _cs149_vset_float(result, 9.999999f, maskClamp);
 
-      // Store final result
+      // Step 6: Store final result
       _cs149_vstore_float(output + i, result, maskAll);
   }
 }
+
+
+
 
 // returns the sum of all elements in values
 float arraySumSerial(float *values, int N)
@@ -330,7 +338,7 @@ float arraySumSerial(float *values, int N)
 
   return sum;
 }
-///////  Is Function me bhi hamain Parallelism implement karna Thaaa
+
 // returns the sum of all elements in values
 // You can assume N is a multiple of VECTOR_WIDTH
 // You can assume VECTOR_WIDTH is a power of 2
